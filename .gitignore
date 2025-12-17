@@ -1,0 +1,11 @@
+# Dossier serveur Next.js (généré pour tester l'exo 5)
+exercice5-server/
+
+# Dépendances
+node_modules/
+
+# Build
+.next/
+
+# Fichiers de lock
+package-lock.json
