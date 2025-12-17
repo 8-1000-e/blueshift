@@ -1,366 +1,472 @@
-# Guide par Indices : Implémenter les References Solana Pay
+# 🎓 Guide d'Apprentissage - Solana Pay (Blueshift)
 
-## Le Parcours en 4 Grandes Étapes
+## Tu es débutant complet ? Pas de panique !
 
-1. **Générer une reference** → Une adresse Solana aléatoire
-2. **Créer l'URL de paiement** → Avec la reference dedans
-3. **Surveiller la blockchain** → Chercher si la reference apparaît
-4. **Réagir quand trouvé** → Afficher un message de succès
+Ce guide va t'accompagner étape par étape pour comprendre et réussir les exercices du cours Solana Pay sur Blueshift. Je ne te donne pas le code directement - je t'explique les concepts et te guide pour que tu apprennes vraiment.
 
 ---
 
-## PARTIE 1 : Générer une Reference
+## 📚 ÉTAPE 0 : Prérequis à installer
 
-### Ce que tu dois faire
-Créer une nouvelle adresse Solana qui servira d'identifiant unique pour ce paiement.
+Avant de commencer, assure-toi d'avoir :
 
-### Les outils à utiliser
-- La classe `Keypair` de `@solana/web3.js`
-- Sa méthode statique `generate()`
-- La propriété `publicKey` du keypair généré
+### 1. Node.js
+```bash
+# Vérifie si tu l'as
+node --version
 
-### Comment penser
-- Tu ne veux PAS garder la clé privée
-- Tu veux juste la clé publique (l'adresse)
-- Cette adresse ne recevra jamais d'argent, elle sert juste de marqueur
-
-### Où stocker cette reference
-- Dans un state React (useState)
-- Tu en auras besoin pour construire l'URL ET pour la surveillance
-
-### Comment afficher
-- Les PublicKey ont une méthode `.toBase58()` qui les convertit en string lisible
-
-### À tester
-- Génère plusieurs references
-- Vérifie qu'elles sont différentes à chaque fois
-- Console.log pour voir à quoi elles ressemblent
-
----
-
-## PARTIE 2 : Construire l'URL de Paiement
-
-### La structure d'une URL Solana Pay
-```
-solana:[ADRESSE_DESTINATAIRE]?param1=value1&param2=value2
+# Si non, télécharge sur https://nodejs.org (version LTS)
 ```
 
-### Les paramètres obligatoires
-- `amount` : Le montant en SOL (nombre décimal)
-- `reference` : Ta reference (en string base58)
+### 2. Un éditeur de code
+- **VS Code** (recommandé) : https://code.visualstudio.com
+- Extensions utiles : "Solana" et "TypeScript"
 
-### Les paramètres optionnels mais recommandés
-- `label` : Nom de ton app/commerce
-- `message` : Message pour l'utilisateur
+### 3. Un wallet Solana (pour tester)
+- **Phantom** : https://phantom.app
+- Mets-le en mode "Devnet" dans les settings
 
-### Comment construire l'URL en JavaScript
-- Utilise la classe native `URL`
-- Le constructeur prend la partie `solana:ADRESSE`
-- Utilise `.searchParams.append(nom, valeur)` pour ajouter les paramètres
-- `.toString()` pour avoir l'URL complète
+### 4. Créer ton projet
+```bash
+# Crée un dossier
+mkdir solana-pay-learning
+cd solana-pay-learning
 
-### Points d'attention
-- Convertis ta reference PublicKey en string avec `.toBase58()`
-- Convertis ton montant number en string avec `.toString()`
-- Tous les paramètres doivent être des strings
+# Initialise le projet
+npm init -y
 
-### Où obtenir l'adresse destinataire
-- C'est TON adresse Solana où tu veux recevoir l'argent
-- Pour tester : utilise devnet
-- Phantom wallet : Settings → Developer Settings → Change Network → Devnet
-- Copie ton adresse devnet
+# Installe TypeScript
+npm install typescript ts-node @types/node --save-dev
 
-### À tester
-- Génère une URL
-- Copie-colle-la dans la barre d'adresse
-- Phantom devrait s'ouvrir automatiquement
-- Tu dois voir les détails du paiement (montant, destinataire)
-
----
-
-## PARTIE 3 : La Connexion Solana
-
-### Ce qu'il te faut
-Un objet `Connection` qui te permet de communiquer avec le réseau Solana.
-
-### Comment le créer
-- Utilise la classe `Connection` de `@solana/web3.js`
-- Le constructeur prend une URL de RPC en paramètre
-
-### Les URLs de RPC
-- Devnet : `"https://api.devnet.solana.com"`
-- Mainnet : `"https://api.mainnet-beta.solana.com"`
-
-### Où le créer
-- EN DEHORS de ton composant React (sinon il se recrée à chaque render)
-- Ou dans un useEffect sans dépendances si tu veux qu'il soit dans le composant
-
-### À tester
-- Appelle `connection.getVersion()` pour vérifier que ça marche
-- C'est une fonction async, utilise await
-- Tu dois recevoir un objet avec la version de Solana
-
----
-
-## PARTIE 4 : La Surveillance (Le Gros Morceau)
-
-### L'idée générale
-Tu vas créer une boucle qui vérifie toutes les secondes si ta reference est apparue sur la blockchain.
-
-### Les outils React nécessaires
-
-**useState** pour :
-- Stocker le statut du paiement ("waiting", "found", "error")
-- Pouvoir mettre à jour l'interface
-
-**useRef** pour :
-- Garder en mémoire la dernière transaction trouvée
-- Sans provoquer de re-render
-
-**useEffect** pour :
-- Lancer la surveillance quand la reference est créée
-- Nettoyer quand le composant se démonte
-
-### La fonction magique : findReference
-
-**D'où elle vient ?**
-- Package `@solana/pay`
-- Import : `import { findReference, FindReferenceError } from '@solana/pay';`
-
-**Ses paramètres :**
-1. La connection Solana
-2. Ta reference (en PublicKey, pas en string)
-3. Un objet d'options avec :
-   - `until` : Ne cherche que les transactions après celle-ci
-   - `finality` : Niveau de confirmation ("confirmed" ou "finalized")
-
-**Ce qu'elle retourne :**
-- Si trouvé : un objet avec `.signature` (la signature de la transaction)
-- Si pas trouvé : lance une `FindReferenceError`
-
-### Le pattern à utiliser
-
-**setInterval** :
-- Fonction JavaScript native
-- Exécute du code toutes les X millisecondes
-- Premier paramètre : la fonction à exécuter
-- Deuxième paramètre : l'intervalle en ms (1000 = 1 seconde)
-
-**async/await** :
-- Ta fonction dans setInterval doit être `async`
-- Utilise `await` devant `findReference`
-
-**try/catch** :
-- Entoure l'appel à `findReference` dans un try
-- Dans le catch, vérifie si c'est une `FindReferenceError`
-- Si oui : c'est normal, continue de chercher
-- Si non : c'est une vraie erreur, log-la
-
-### La gestion de "until"
-
-**Le problème :**
-Sans `until`, tu vas retrouver la même transaction en boucle.
-
-**La solution :**
-- Crée un useRef pour stocker la dernière signature trouvée
-- Passe `mostRecentTransaction.current` dans le paramètre `until`
-- Quand tu trouves une transaction, update le ref : `ref.current = signature`
-
-### Le cleanup
-
-**Pourquoi c'est critique :**
-Si tu oublies, ton interval va continuer à tourner même quand le composant est démonté = fuite mémoire.
-
-**Comment faire :**
-- `useEffect` peut retourner une fonction
-- Cette fonction est appelée au démontage
-- Dans cette fonction : appelle `clearInterval(interval)`
-
-### Structure du useEffect
-
-```
-useEffect(() => {
-  // Si pas de reference, ne rien faire
-  // Créer le setInterval
-  // Dans l'interval : appeler findReference
-  // Gérer les deux cas : trouvé / pas trouvé
-  // Retourner une fonction qui fait clearInterval
-}, [reference]); // Dépendance : se relance si reference change
+# Crée le fichier de config TypeScript
+npx tsc --init
 ```
 
-### À tester
-
-**Test 1 : Console logs**
-- Ajoute des console.log à chaque étape
-- "Début surveillance"
-- "Vérification..." à chaque boucle
-- "Pas encore trouvé" ou "Trouvé !"
-
-**Test 2 : Sans payer**
-- Lance la surveillance
-- Laisse tourner quelques secondes
-- Tu dois voir les console.log se répéter toutes les secondes
-
-**Test 3 : Avec paiement**
-- Génère l'URL
-- Ouvre-la dans Phantom
-- Approuve le paiement
-- Attends quelques secondes
-- Tu dois voir "Trouvé !" dans la console
+### 5. Installer les dépendances Solana
+```bash
+npm install @solana/web3.js @solana/pay bignumber.js
+```
 
 ---
 
-## PARTIE 5 : L'Interface Utilisateur
+## 🧠 LEÇON 1 : Comprendre les bases
 
-### Les états à afficher
+### C'est quoi Solana Pay ?
 
-**Avant génération :**
-- Un bouton "Générer un paiement"
+Imagine que tu veux recevoir un paiement. Traditionnellement :
+```
+Client → Banque → Processeur (Stripe/PayPal) → Ta banque → Toi
+         ↑              ↑                         ↑
+       Délai         Frais 2-3%               2-3 jours
+```
 
-**Après génération :**
-- L'URL de paiement (en texte ou QR code)
-- Un message "En attente du paiement..."
+Avec Solana Pay :
+```
+Client → Toi
+    ↑
+  Instantané, ~0.00025$ de frais
+```
 
-**Après détection :**
-- Un message "Paiement reçu !"
-- Optionnel : la signature de la transaction
+### Les 2 types de requêtes
 
-### Gérer le statut
+| Type | C'est quoi | Exemple |
+|------|------------|---------|
+| **Transfer Request** | Tout est dans l'URL, simple | "Paie 5$ à cette adresse" |
+| **Transaction Request** | Le serveur construit la transaction | "Achète ce NFT au prix actuel" |
 
-**Les états possibles :**
-- `"idle"` : Rien n'est lancé
-- `"waiting"` : Surveillance en cours
-- `"found"` : Paiement détecté
-- `"error"` : Problème
+### L'URL Solana Pay - Anatomie
 
-**Comment afficher conditionnellement :**
-- Utilise des conditions `{status === "waiting" && <div>...</div>}`
-- Ou un switch/if pour plus de clarté
+```
+solana:<DESTINATAIRE>?amount=<MONTANT>&label=<NOM>&message=<MESSAGE>
+```
 
-### Amélioration : QR Code
-
-Si tu veux afficher un QR code au lieu de l'URL :
-- Package : `qrcode.react`
-- Composant : `<QRCode value={paymentUrl} />`
-
----
-
-## ÉTAPES DE TEST COMPLÈTES
-
-### Setup Phantom
-
-1. Installe l'extension Phantom
-2. Crée un wallet ou utilise un existant
-3. Va dans Settings → Developer Settings
-4. Change Network → Devnet
-5. Copie ton adresse devnet
-
-### Obtenir des SOL de test
-
-1. Va sur https://faucet.solana.com
-2. Colle ton adresse devnet
-3. Demande des SOL gratuits (airdrop)
-4. Attends quelques secondes
-5. Vérifie dans Phantom que tu as des SOL
-
-### Tester ton app
-
-**Première fois :**
-1. Clique sur "Générer un paiement"
-2. Copie l'URL générée
-3. Colle dans la barre d'adresse du navigateur
-4. Phantom s'ouvre
-5. Vérifie le montant et le destinataire
-6. Approuve
-7. Attends 2-5 secondes
-8. Ton app doit afficher "Paiement reçu !"
-
-**Vérifier la transaction :**
-1. Va sur https://explorer.solana.com/?cluster=devnet
-2. Colle la signature affichée dans ta console
-3. Tu dois voir la transaction avec tous ses détails
-4. Dans les comptes, cherche ta reference
-5. Elle doit être là, en mode "read-only"
-
-**Tester plusieurs fois :**
-- Génère plusieurs paiements
-- Vérifie que chaque reference est unique
-- Vérifie que chaque paiement est détecté indépendamment
+**Décomposition :**
+- `solana:` → Le protocole (comme `https:`)
+- `<DESTINATAIRE>` → L'adresse publique qui reçoit
+- `amount` → Combien (en SOL ou tokens)
+- `label` → Qui demande le paiement
+- `message` → Pourquoi
 
 ---
 
-## POINTS D'ATTENTION
+## 🔧 EXERCICE 1 : Générer une Keypair
 
-### La finality
+### Objectif
+Créer ta première adresse Solana en TypeScript.
 
-**"confirmed"** :
-- Rapide (~400ms)
-- Peut être annulé (très rare)
-- OK pour petits montants
+### Ce que tu dois comprendre
 
-**"finalized"** :
-- Lent (~13 secondes)
-- Définitif, ne peut pas être annulé
-- Recommandé pour gros montants
+Une **Keypair** c'est :
+- Une **clé publique** = ton adresse (comme un IBAN)
+- Une **clé privée** = ton mot de passe (NE JAMAIS PARTAGER)
 
-### Les erreurs courantes
+### Indices pour y arriver
 
-**"Cannot read property of undefined"** :
-- Tu essaies d'utiliser une variable avant qu'elle existe
-- Vérifie tes conditions `if (!reference) return;`
+1. Tu dois importer `Keypair` depuis `@solana/web3.js`
+2. La méthode pour générer une nouvelle keypair s'appelle... `generate()` 🤔
+3. Pour afficher la clé publique, il y a une propriété `.publicKey`
+4. Pour la convertir en texte lisible, utilise `.toBase58()`
 
-**"Invalid public key"** :
-- Tu passes une string au lieu d'une PublicKey
-- Utilise `new PublicKey(stringValue)` pour convertir
+### Structure de ton fichier
 
-**"Transaction not found"** :
-- Normal ! C'est la FindReferenceError
-- Ne la traite pas comme une vraie erreur
+Crée `exercice1.ts` :
+```typescript
+// 1. Importe Keypair depuis @solana/web3.js
+// ÉCRIS TON IMPORT ICI
 
-**L'interval ne s'arrête pas** :
-- Tu oublies le `clearInterval` dans le cleanup
-- Ajoute des console.log pour vérifier que le cleanup est appelé
+// 2. Génère une nouvelle keypair
+// ÉCRIS TON CODE ICI
 
-### Optimisations possibles
+// 3. Affiche la clé publique
+// ÉCRIS TON CODE ICI
+```
 
-**Timeout** :
-- Ne surveille pas indéfiniment
-- Arrête après 5-10 minutes si rien trouvé
+### Pour exécuter
+```bash
+npx ts-node exercice1.ts
+```
 
-**Debounce** :
-- Si tu veux éviter trop de requêtes
-- Augmente l'intervalle à 2-3 secondes
+### Résultat attendu
+Tu devrais voir quelque chose comme :
+```
+Clé publique : 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+```
 
-**Backend** :
-- Pour la production, mets la surveillance côté serveur
-- Le frontend affiche juste le statut
+### ❓ Bloqué ?
+<details>
+<summary>Indice 1</summary>
+L'import ressemble à : `import { Keypair } from "@solana/web3.js";`
+</details>
+
+<details>
+<summary>Indice 2</summary>
+Pour générer : `const keypair = Keypair.generate();`
+</details>
 
 ---
 
-## RESSOURCES UTILES
+## 🔧 EXERCICE 2 : Créer une URL de Transfer Request
 
-### Documentation
-- Solana Pay docs : https://docs.solanapay.com
+### Objectif
+Créer un lien de paiement Solana Pay.
+
+### Ce que tu dois comprendre
+
+L'URL encode toutes les infos du paiement :
+- Qui reçoit ?
+- Combien ?
+- Pourquoi ?
+
+### Indices pour y arriver
+
+1. Tu dois importer `encodeURL` depuis `@solana/pay`
+2. Tu as besoin d'un `PublicKey` pour le destinataire
+3. Le montant utilise `BigNumber` (pas un simple number)
+4. La fonction `encodeURL()` prend un objet avec les paramètres
+
+### Les paramètres possibles
+
+| Paramètre | Type | Obligatoire | Description |
+|-----------|------|-------------|-------------|
+| `recipient` | PublicKey | ✅ | Qui reçoit le paiement |
+| `amount` | BigNumber | ❌ | Montant en SOL |
+| `label` | string | ❌ | Nom du marchand |
+| `message` | string | ❌ | Description |
+| `memo` | string | ❌ | Note on-chain |
+| `reference` | PublicKey | ❌ | ID unique pour tracker |
+
+### Structure de ton fichier
+
+Crée `exercice2.ts` :
+```typescript
+// 1. Imports nécessaires
+// - Keypair, PublicKey depuis @solana/web3.js
+// - encodeURL depuis @solana/pay
+// - BigNumber depuis bignumber.js
+
+// 2. Crée ou utilise une adresse de destinataire
+// Tu peux utiliser ta keypair de l'exercice 1
+// Ou une adresse en dur pour tester
+
+// 3. Définis les paramètres du paiement
+// - recipient: l'adresse
+// - amount: utilise new BigNumber(0.01) pour 0.01 SOL
+// - label: "Mon Magasin"
+// - message: "Merci pour ton achat !"
+
+// 4. Génère l'URL avec encodeURL()
+
+// 5. Affiche l'URL
+```
+
+### Résultat attendu
+```
+URL Solana Pay : solana:7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU?amount=0.01&label=Mon+Magasin&message=Merci+pour+ton+achat+%21
+```
+
+### ❓ Bloqué ?
+<details>
+<summary>Indice : structure de encodeURL</summary>
+
+```typescript
+const url = encodeURL({
+  recipient: new PublicKey("..."),
+  amount: new BigNumber(0.01),
+  label: "...",
+  message: "...",
+});
+```
+</details>
+
+---
+
+## 🔧 EXERCICE 3 : Générer un QR Code
+
+### Objectif
+Transformer ton URL en QR code scannable.
+
+### Ce que tu dois comprendre
+
+Un QR code c'est juste une façon visuelle d'encoder une URL.
+Le wallet Phantom peut scanner ce QR et lire l'URL Solana Pay.
+
+### Indices pour y arriver
+
+1. Importe `createQR` depuis `@solana/pay`
+2. `createQR()` prend l'URL et des options (taille, couleur)
+3. Le QR peut être sauvegardé en fichier ou affiché
+
+### Structure de ton fichier
+
+Crée `exercice3.ts` :
+```typescript
+// 1. Reprends le code de l'exercice 2 pour générer l'URL
+
+// 2. Importe createQR depuis @solana/pay
+
+// 3. Crée le QR code
+// createQR(url, taille, couleurFond)
+// Exemple de taille : 400
+// Couleur de fond : "white" ou "transparent"
+
+// 4. Pour sauvegarder le QR en fichier PNG
+// Tu auras besoin de la méthode .getRawData('png')
+// Et du module 'fs' pour écrire le fichier
+```
+
+### Pour tester
+1. Génère le QR code
+2. Ouvre-le avec une app de visualisation
+3. Scanne-le avec Phantom (en mode Devnet)
+4. Tu devrais voir la demande de paiement !
+
+### ❓ Bloqué ?
+<details>
+<summary>Indice : créer et sauvegarder le QR</summary>
+
+```typescript
+import { writeFile } from 'fs/promises';
+
+const qr = createQR(url, 400, "white");
+const qrBuffer = await qr.getRawData('png');
+await writeFile('qrcode.png', qrBuffer);
+```
+</details>
+
+---
+
+## 🔧 EXERCICE 4 : Utiliser une Reference
+
+### Objectif
+Comprendre et utiliser le système de `reference` pour tracker les paiements.
+
+### Ce que tu dois comprendre
+
+**Le problème** : Comment savoir si quelqu'un a payé ?
+- On n'a pas la signature de transaction
+- On ne sait pas quand ça va arriver
+
+**La solution** : La `reference`
+- C'est une clé publique unique qu'on ajoute à la transaction
+- On peut ensuite chercher "toutes les transactions qui contiennent cette reference"
+
+### Le flux
+
+```
+1. Tu génères une reference unique (une Keypair)
+2. Tu l'ajoutes à l'URL Solana Pay
+3. Le client paie → la reference est incluse dans la transaction
+4. Tu polls le réseau pour trouver une transaction avec cette reference
+5. Tu trouves → le client a payé !
+```
+
+### Indices pour y arriver
+
+1. Génère une nouvelle `Keypair` pour la reference
+2. Ajoute `.publicKey` comme paramètre `reference` dans `encodeURL()`
+3. Utilise `findReference` de `@solana/pay` pour chercher la transaction
+
+### Structure de ton fichier
+
+Crée `exercice4.ts` :
+```typescript
+// 1. Imports
+// - Connection, Keypair, PublicKey de @solana/web3.js
+// - encodeURL, findReference de @solana/pay
+// - BigNumber
+
+// 2. Connexion au réseau (devnet)
+// new Connection(clusterApiUrl("devnet"), "confirmed")
+
+// 3. Génère une reference unique
+// C'est juste une Keypair dont tu utilises la publicKey
+
+// 4. Crée l'URL avec la reference
+
+// 5. Affiche l'URL et le QR
+
+// 6. Boucle qui cherche la transaction
+// Utilise setInterval pour vérifier toutes les secondes
+// findReference(connection, reference) va chercher
+
+// 7. Quand trouvé, affiche "Paiement reçu !"
+```
+
+### ❓ Bloqué ?
+<details>
+<summary>Indice : structure de findReference</summary>
+
+```typescript
+try {
+  const signatureInfo = await findReference(connection, reference, {
+    finality: "confirmed",
+  });
+  console.log("Paiement trouvé !", signatureInfo.signature);
+} catch (e) {
+  // Pas encore trouvé, on réessaie
+}
+```
+</details>
+
+---
+
+## 🔧 EXERCICE 5 : Transaction Request (Avancé)
+
+### Objectif
+Créer un serveur qui génère des transactions dynamiques.
+
+### Ce que tu dois comprendre
+
+Contrairement au Transfer Request (tout dans l'URL), ici :
+1. L'URL pointe vers ton serveur
+2. Le wallet fait une requête HTTP à ton serveur
+3. Ton serveur construit et renvoie une transaction
+4. Le wallet la signe et l'envoie
+
+### Pourquoi c'est utile ?
+- Prix dynamiques
+- Logique métier complexe
+- NFT minting
+- Programmes de fidélité
+
+### Le protocole
+
+**GET** `/api/pay`
+→ Renvoie des infos d'affichage (label, icon)
+
+**POST** `/api/pay`
+→ Reçoit l'adresse du client, renvoie la transaction à signer
+
+### Ce dont tu as besoin
+
+1. Un framework web (Next.js, Express, ou Hono)
+2. Gérer les CORS (obligatoire pour les wallets)
+3. Construire une Transaction Solana
+
+### Structure de base
+
+```typescript
+// Route GET - Infos d'affichage
+// Renvoie { label: "...", icon: "..." }
+
+// Route POST - Construction de la transaction
+// 1. Récupère l'adresse du client dans le body
+// 2. Connecte-toi au réseau pour avoir le blockhash
+// 3. Crée une Transaction avec le client comme feePayer
+// 4. Ajoute tes instructions (transfert, etc.)
+// 5. Sérialise et renvoie la transaction
+```
+
+### ❓ Bloqué ?
+<details>
+<summary>Indice : structure de la réponse POST</summary>
+
+```typescript
+// La transaction doit être sérialisée en base64
+const serialized = transaction.serialize({
+  requireAllSignatures: false,
+  verifySignatures: false,
+});
+const base64 = serialized.toString('base64');
+
+// Réponse
+return { transaction: base64 };
+```
+</details>
+
+---
+
+## 📝 CHECKLIST DE PROGRESSION
+
+- [ ] J'ai installé Node.js et les dépendances
+- [ ] J'ai créé mon premier wallet (Keypair)
+- [ ] Je comprends la différence clé publique / clé privée
+- [ ] J'ai créé une URL de Transfer Request
+- [ ] J'ai généré un QR code
+- [ ] Je comprends le concept de Reference
+- [ ] J'ai implémenté la détection de paiement avec findReference
+- [ ] (Bonus) J'ai créé un endpoint de Transaction Request
+
+---
+
+## 🆘 RESSOURCES SI TU BLOQUES
+
+### Documentation officielle
+- Solana Pay : https://docs.solanapay.com
 - Solana Web3.js : https://solana-labs.github.io/solana-web3.js
 
-### Outils
-- Solana Explorer : https://explorer.solana.com
-- Faucet devnet : https://faucet.solana.com
-- Phantom wallet : https://phantom.app
+### Erreurs courantes
 
-### Debug
-- Toujours console.log à chaque étape
-- Vérifie dans l'Explorer que la transaction existe
-- Compare les adresses (reference, destinataire) pour voir s'ils matchent
+| Erreur | Solution |
+|--------|----------|
+| `Cannot find module '@solana/pay'` | `npm install @solana/pay` |
+| `BigNumber is not a constructor` | `import BigNumber from 'bignumber.js'` |
+| `Connection refused` | Vérifie que tu es en devnet |
+| `FindReferenceError` | Normal si pas de paiement, continue à poll |
+
+### Pour tester sans dépenser de vrai SOL
+1. Mets Phantom en mode **Devnet**
+2. Va sur https://faucet.solana.com
+3. Demande des SOL de test gratuits
 
 ---
 
-## RÉCAP : CE QUE TU DOIS CODER
+## 🎯 NEXT STEPS
 
-1. **Générer** : Une PublicKey aléatoire
-2. **Construire** : Une URL avec cette PublicKey dedans
-3. **Surveiller** : Utiliser findReference dans un setInterval
-4. **Réagir** : Afficher un message quand trouvé
-5. **Nettoyer** : Arrêter l'interval au bon moment
+Une fois ces exercices terminés, tu peux :
 
-C'est tout ! Maintenant code, teste, debug, et apprends en faisant 🚀
+1. **Intégrer dans une vraie app** - Ajoute Solana Pay à un site web
+2. **Créer des paiements en tokens** - Utilise le paramètre `spl-token`
+3. **Construire un Point of Sale** - Interface complète pour marchands
+4. **Explorer les Transaction Requests** - Logique serveur avancée
+
+---
+
+## 💬 CONSEILS FINAUX
+
+1. **Ne copie pas** - Tape le code toi-même, même si c'est lent
+2. **Expérimente** - Change les valeurs, casse des trucs, répare
+3. **Lis les erreurs** - Elles te disent exactement le problème
+4. **Une étape à la fois** - Ne passe pas à la suite tant que tu comprends pas
+
+Bonne chance ! 🚀

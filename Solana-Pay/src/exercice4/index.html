@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice 4 - Reference Solana Pay</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+            background: #1a1a2e;
+            color: white;
+        }
+        h1 {
+            color: #9945FF;
+        }
+        #qrcode {
+            margin: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+        }
+        #url {
+            margin-top: 20px;
+            padding: 10px;
+            background: #333;
+            border-radius: 5px;
+            word-break: break-all;
+            max-width: 500px;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #222;
+            border-radius: 5px;
+            font-size: 18px;
+        }
+        .waiting {
+            color: orange;
+        }
+        .paid {
+            color: #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <h1>Solana Pay - Reference</h1>
+    <div id="qrcode"></div>
+    <div id="url"></div>
+    <div id="ref" style="margin-top: 10px; padding: 10px; background: #444; border-radius: 5px; font-size: 12px;"></div>
+    <div id="status" class="waiting">En attente de paiement...</div>
+
+    <script type="module">
+        import { Keypair, Connection, clusterApiUrl } from "https://esm.sh/@solana/web3.js@1.98.4";
+        import { encodeURL, createQR, findReference } from "https://esm.sh/@solana/pay@0.2.6";
+        import BigNumber from "https://esm.sh/bignumber.js@9.3.1";
+
+        function getPair() {
+            return Keypair.generate();
+        }
+
+        function generateQR(url, taille, color) {
+            const qr = createQR(url, taille, color);
+            qr.append(document.getElementById("qrcode"));
+        }
+
+        async function checkPayment(connection, reference) {
+            try {
+                const result = await findReference(connection, reference, { finality: "confirmed" });
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function main() {
+            const recipient = getPair().publicKey;
+            const reference = getPair().publicKey;
+
+            const url = encodeURL({
+                recipient: recipient,
+                amount: new BigNumber(0.001),
+                reference: reference,
+                label: "solana",
+                message: "test"
+            });
+
+            generateQR(url, 400, "transparent");
+            document.getElementById("url").textContent = url.href;
+            document.getElementById("ref").textContent = "Reference: " + reference.toBase58();
+
+            const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+            const statusEl = document.getElementById("status");
+
+            let time = 0;
+            const interval = setInterval(async () => {
+                statusEl.textContent = `En attente de paiement... ${time}s`;
+                const paid = await checkPayment(connection, reference);
+                if (paid) {
+                    statusEl.textContent = `Paiement recu apres ${time} secondes!`;
+                    statusEl.className = "paid";
+                    clearInterval(interval);
+                }
+                time++;
+            }, 1000);
+        }
+
+        main();
+    </script>
+</body>
+</html>

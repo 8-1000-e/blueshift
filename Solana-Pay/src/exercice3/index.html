@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice 3 - QR Code Solana Pay</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+            background: #1a1a2e;
+            color: white;
+        }
+        h1 {
+            color: #9945FF;
+        }
+        #qrcode {
+            margin: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+        }
+        #url {
+            margin-top: 20px;
+            padding: 10px;
+            background: #333;
+            border-radius: 5px;
+            word-break: break-all;
+            max-width: 500px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Solana Pay - QR Code</h1>
+    <div id="qrcode"></div>
+    <div id="url"></div>
+
+    <script type="module">
+        import { Keypair } from "https://esm.sh/@solana/web3.js@1.98.4";
+        import { encodeURL, createQR } from "https://esm.sh/@solana/pay@0.2.6";
+        import BigNumber from "https://esm.sh/bignumber.js@9.3.1";
+
+        function getPair() {
+            return Keypair.generate();
+        }
+
+        function generateQR(url, taille, color) {
+            const qr = createQR(url, taille, color);
+            qr.append(document.getElementById("qrcode"));
+        }
+
+        function generateURL() {
+            const url = encodeURL({
+                recipient: getPair().publicKey,
+                amount: new BigNumber(100),
+                label: "solana",
+                message: "test"
+            });
+
+            generateQR(url, 400, "transparent");
+            document.getElementById("url").textContent = url.href;
+        }
+
+        generateURL();
+    </script>
+</body>
+</html>

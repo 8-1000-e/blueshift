@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice 5 - Transaction Request</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+            background: #1a1a2e;
+            color: white;
+        }
+        h1 {
+            color: #9945FF;
+        }
+        #qrcode {
+            margin: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+        }
+        #url {
+            margin-top: 20px;
+            padding: 10px;
+            background: #333;
+            border-radius: 5px;
+            word-break: break-all;
+            max-width: 500px;
+        }
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #222;
+            border-radius: 5px;
+            max-width: 500px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Solana Pay - Transaction Request</h1>
+    <p>Scanne ce QR code avec Solflare (en mode Devnet)</p>
+    <div id="qrcode"></div>
+    <div id="url"></div>
+    <div class="info">
+        <p><strong>Comment ça marche :</strong></p>
+        <ol>
+            <li>Le wallet scanne le QR</li>
+            <li>Il fait un GET vers le serveur → affiche "Blueshift demo"</li>
+            <li>Tu confirmes → POST avec ton adresse</li>
+            <li>Le serveur construit la transaction</li>
+            <li>Tu signes → 1 SOL envoyé</li>
+        </ol>
+    </div>
+
+    <script type="module">
+        import { createQR } from "https://esm.sh/@solana/pay@0.2.6";
+
+        // URL du serveur exposé via ngrok
+        const serverUrl = "https://nonarbitrarily-cryptogrammic-asley.ngrok-free.dev/api/pay";
+
+        // Format Transaction Request : solana:<URL_DU_SERVEUR>
+        const solanaPayUrl = `solana:${encodeURIComponent(serverUrl)}`;
+
+        // Générer le QR code
+        const qr = createQR(solanaPayUrl, 400, "transparent");
+        qr.append(document.getElementById("qrcode"));
+
+        // Afficher l'URL
+        document.getElementById("url").textContent = solanaPayUrl;
+    </script>
+</body>
+</html>
