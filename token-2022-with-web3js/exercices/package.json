@@ -1,0 +1,29 @@
+{
+  "name": "token-2022-exercices",
+  "version": "1.0.0",
+  "description": "Token-2022 exercises with web3.js",
+  "scripts": {
+    "transfer-fee": "npx ts-node transfer-fee/index.ts",
+    "mint-close-authority": "npx ts-node mint-close-authority/index.ts",
+    "default-account-state": "npx ts-node default-account-state/index.ts",
+    "immutable-owner": "npx ts-node immutable-owner/index.ts",
+    "memo-transfer": "npx ts-node memo-transfer/index.ts",
+    "non-transferable": "npx ts-node non-transferable/index.ts",
+    "interest-bearing": "npx ts-node interest-bearing/index.ts",
+    "cpi-guard": "npx ts-node cpi-guard/index.ts",
+    "permanent-delegate": "npx ts-node permanent-delegate/index.ts",
+    "metadata": "npx ts-node metadata/index.ts",
+    "group-and-member": "npx ts-node group-and-member/index.ts"
+  },
+  "dependencies": {
+    "@solana/spl-memo": "^0.2.5",
+    "@solana/spl-token": "^0.4.0",
+    "@solana/spl-token-group": "^0.0.7",
+    "@solana/spl-token-metadata": "^0.1.6",
+    "@solana/web3.js": "^1.95.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  }
+}

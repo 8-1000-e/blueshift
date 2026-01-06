@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Anchor Accounts - Blueshift</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        /* Start Screen */
+        #start-screen {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .categories-list {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .categories-list h3 {
+            margin-bottom: 15px;
+            color: #00d9ff;
+        }
+
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .category-item:last-child {
+            border-bottom: none;
+        }
+
+        .btn {
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            color: #1a1a2e;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
+        }
+
+        /* Quiz Screen */
+        #quiz-screen {
+            display: none;
+        }
+
+        .progress-bar {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            height: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .question-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .category-badge {
+            background: rgba(0, 217, 255, 0.2);
+            color: #00d9ff;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .score-display {
+            color: #00ff88;
+        }
+
+        .question-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .option:hover:not(.disabled) {
+            background: rgba(255,255,255,0.1);
+            border-color: #00d9ff;
+            transform: translateX(5px);
+        }
+
+        .option.selected {
+            border-color: #00d9ff;
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        .option.correct {
+            border-color: #00ff88;
+            background: rgba(0, 255, 136, 0.15);
+        }
+
+        .option.wrong {
+            border-color: #ff4757;
+            background: rgba(255, 71, 87, 0.15);
+        }
+
+        .option.disabled {
+            cursor: default;
+        }
+
+        .option-letter {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .option.correct .option-letter {
+            background: #00ff88;
+            color: #1a1a2e;
+        }
+
+        .option.wrong .option-letter {
+            background: #ff4757;
+            color: #fff;
+        }
+
+        /* Explanation */
+        .explanation {
+            display: none;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .explanation.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .explanation h4 {
+            color: #00d9ff;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .explanation pre {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            margin: 10px 0;
+        }
+
+        .explanation code {
+            color: #00ff88;
+        }
+
+        .next-btn {
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            color: #1a1a2e;
+            font-weight: bold;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .next-btn.show {
+            display: inline-block;
+        }
+
+        /* Results Screen */
+        #results-screen {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .results-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(#00ff88 var(--score-percent), rgba(255,255,255,0.1) 0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .score-circle::before {
+            content: '';
+            width: 120px;
+            height: 120px;
+            background: #1a1a2e;
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        .score-text {
+            position: relative;
+            z-index: 1;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .result-message {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .categories-results {
+            text-align: left;
+            margin-top: 30px;
+        }
+
+        .categories-results h3 {
+            margin-bottom: 15px;
+            color: #ff4757;
+        }
+
+        .category-error {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: rgba(255, 71, 87, 0.1);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid #00d9ff;
+            color: #00d9ff;
+            padding: 12px 30px;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        /* Skip button */
+        .skip-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #888;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+
+        .skip-btn:hover {
+            border-color: #888;
+            color: #fff;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            .question-text {
+                font-size: 1.1rem;
+            }
+            .question-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Quiz Anchor Accounts</h1>
+            <p class="subtitle">Formation Blueshift - Teste tes connaissances !</p>
+        </header>
+
+        <!-- Start Screen -->
+        <div id="start-screen">
+            <div class="categories-list">
+                <h3>30 questions sur 13 categories :</h3>
+                <div id="categories-display"></div>
+            </div>
+            <button class="btn" onclick="startQuiz()">Commencer le Quiz</button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+
+            <div class="question-info">
+                <span class="category-badge" id="category-badge"></span>
+                <span class="score-display" id="score-display">Score: 0/0</span>
+            </div>
+
+            <div class="question-card">
+                <p class="question-text" id="question-text"></p>
+                <div class="options" id="options"></div>
+            </div>
+
+            <div class="explanation" id="explanation">
+                <h4>Explication</h4>
+                <div id="explanation-text"></div>
+            </div>
+
+            <div style="text-align: center;">
+                <button class="next-btn" id="next-btn" onclick="nextQuestion()">Question suivante</button>
+                <button class="skip-btn" id="skip-btn" onclick="skipQuestion()">Passer</button>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen">
+            <div class="results-card">
+                <div class="score-circle" id="score-circle">
+                    <span class="score-text" id="final-score"></span>
+                </div>
+                <p class="result-message" id="result-message"></p>
+                <p id="result-details"></p>
+
+                <div class="categories-results" id="categories-results" style="display:none;">
+                    <h3>Categories a revoir :</h3>
+                    <div id="wrong-categories"></div>
+                </div>
+            </div>
+
+            <button class="btn" onclick="restartQuiz()">Recommencer</button>
+            <button class="btn-secondary" onclick="reviewWrong()">Revoir les erreurs</button>
+        </div>
+    </div>
+
+    <script>
+const questions = [
+  // Structure des comptes
+  {
+    category: "Structure des comptes",
+    question: "Quels sont les 5 champs de base d'un compte Solana ?",
+    options: [
+      "lamports, data, owner, executable, rent_epoch",
+      "balance, info, program, type, fee",
+      "sol, bytes, authority, code, slot",
+      "amount, storage, creator, runnable, epoch"
+    ],
+    correct: 0,
+    explanation: `Tous les comptes Solana partagent la meme structure :
+
+<pre><code>pub struct Account {
+    pub lamports: u64,           // solde en lamports
+    pub data: Vec<u8>,           // donnees brutes
+    pub owner: Pubkey,           // programme proprietaire
+    pub executable: bool,        // est-ce un programme ?
+    pub rent_epoch: Epoch,       // (deprecie, toujours 0)
+}</code></pre>
+
+Ce qui distingue les comptes : le <strong>owner</strong> et les <strong>data</strong>.`
+  },
+  {
+    category: "Structure des comptes",
+    question: "Qui peut modifier les donnees et les lamports d'un compte ?",
+    options: [
+      "N'importe qui",
+      "Seulement le programme owner du compte",
+      "Seulement le createur du compte",
+      "Seulement le System Program"
+    ],
+    correct: 1,
+    explanation: `Seul le programme <strong>owner</strong> peut modifier un compte.
+
+C'est pour ca qu'on utilise des <strong>CPI</strong> (Cross-Program Invocation) pour demander a un autre programme de faire des modifications.`
+  },
+  // Discriminateurs
+  {
+    category: "Discriminateurs",
+    question: "C'est quoi un discriminateur dans Anchor ?",
+    options: [
+      "Un identifiant unique de 8 bytes pour distinguer les types de comptes",
+      "Le nom du compte en base64",
+      "L'adresse du programme owner",
+      "Le hash de la transaction"
+    ],
+    correct: 0,
+    explanation: `Le discriminateur est un prefixe de <strong>8 bytes</strong>.
+
+Calcul par defaut : <code>sha256("account:NomDeLaStruct")[0..8]</code>
+
+Depuis Anchor v0.31.0, tu peux le customiser :
+<pre><code>#[account(discriminator = 42)]</code></pre>`
+  },
+  {
+    category: "Discriminateurs",
+    question: "Pourquoi ne peut-on pas utiliser [0] comme discriminateur custom ?",
+    options: [
+      "C'est trop petit",
+      "Il est reserve pour les comptes non initialises",
+      "Anchor ne le supporte pas",
+      "Ca causerait une erreur de compilation"
+    ],
+    correct: 1,
+    explanation: `<strong>[0]</strong> est reserve pour les comptes NON INITIALISES.
+
+Quand tu fermes un compte avec <code>close</code>, Anchor met le discriminateur a 0.`
+  },
+  // Creation de compte
+  {
+    category: "Creation de compte",
+    question: "Que fait la contrainte #[account(init)] ?",
+    options: [
+      "Verifie que le compte existe deja",
+      "Cree un nouveau compte appartenant au programme",
+      "Supprime le compte",
+      "Transfere des lamports"
+    ],
+    correct: 1,
+    explanation: `<code>#[account(init)]</code> cree un nouveau compte.
+
+<pre><code>#[account(
+    init,
+    payer = signer,
+    space = 8 + 8  // discriminateur + donnees
+)]
+pub counter: Account<'info, Counter>,</code></pre>`
+  },
+  {
+    category: "Creation de compte",
+    question: "Comment calculer le 'space' pour un compte avec un u64 ?",
+    options: [
+      "8 bytes seulement",
+      "16 bytes (8 discriminateur + 8 u64)",
+      "64 bytes",
+      "Ca depend du runtime"
+    ],
+    correct: 1,
+    explanation: `<strong>Space = discriminateur + donnees</strong>
+
+Tailles courantes :
+- u64 : 8 bytes
+- Pubkey : 32 bytes
+- String : 4 + len
+- Vec<T> : 4 + (len * size_of::<T>())
+
+Astuce : <code>#[derive(InitSpace)]</code> calcule automatiquement !`
+  },
+  {
+    category: "Creation de compte",
+    question: "Que fait init_if_needed ?",
+    options: [
+      "Initialise le compte seulement s'il n'existe pas",
+      "Reinitialise le compte a chaque fois",
+      "Verifie si le compte a besoin de plus d'espace",
+      "Supprime le compte s'il existe"
+    ],
+    correct: 0,
+    explanation: `<code>init_if_needed</code> cree le compte SEULEMENT s'il n'existe pas.
+
+Utile pour les Token Accounts et comptes utilisateur.
+
+Active avec : <code>features = ["init-if-needed"]</code> dans Cargo.toml`
+  },
+  // PDA
+  {
+    category: "PDA",
+    question: "C'est quoi un PDA (Program Derived Address) ?",
+    options: [
+      "Un compte avec une cle privee speciale",
+      "Une adresse derivee de seeds, sans cle privee, controlee par le programme",
+      "L'adresse du deployer du programme",
+      "Un type de token SPL"
+    ],
+    correct: 1,
+    explanation: `<strong>PDA</strong> = adresse calculee a partir de seeds + program_id + bump.
+
+<pre><code>#[account(
+    seeds = [b"vault", user.key().as_ref()],
+    bump
+)]</code></pre>
+
+<strong>Avantage</strong> : pas de cle privee, seul ton programme peut "signer" !`
+  },
+  {
+    category: "PDA",
+    question: "Pourquoi utiliser [b\"vault\", user.key().as_ref()] comme seeds ?",
+    options: [
+      "C'est obligatoire par Anchor",
+      "Pour creer une adresse unique par utilisateur",
+      "Pour economiser des lamports",
+      "Pour accelerer les transactions"
+    ],
+    correct: 1,
+    explanation: `Les seeds determinent l'adresse du PDA.
+
+<strong>"vault"</strong> = prefixe pour identifier le type
+<strong>user.key()</strong> = cle publique de l'utilisateur
+
+Resultat : chaque user a son propre vault !`
+  },
+  {
+    category: "PDA",
+    question: "C'est quoi le 'bump' dans un PDA ?",
+    options: [
+      "Le numero de version du compte",
+      "Un byte (0-255) qui garantit que l'adresse est hors de la courbe ed25519",
+      "Le nombre de transactions",
+      "L'index du compte dans le programme"
+    ],
+    correct: 1,
+    explanation: `Le <strong>bump</strong> garantit que l'adresse n'a PAS de cle privee.
+
+Anchor le cherche automatiquement, mais tu peux le sauvegarder :
+<pre><code>#[account(seeds = [b"vault"], bump = vault.bump)]</code></pre>`
+  },
+  {
+    category: "PDA",
+    question: "Comment deriver un PDA d'un AUTRE programme ?",
+    options: [
+      "C'est impossible",
+      "Avec seeds::program = autre_program.key()",
+      "Avec owner = autre_program",
+      "Avec external = true"
+    ],
+    correct: 1,
+    explanation: `<pre><code>#[account(
+    seeds = [b"config"],
+    bump,
+    seeds::program = other_program.key()
+)]</code></pre>
+
+Utile pour verifier des PDAs d'autres programmes.`
+  },
+  // Reallocation
+  {
+    category: "Reallocation",
+    question: "A quoi sert realloc ?",
+    options: [
+      "A reinitialiser un compte",
+      "A changer la taille d'un compte existant",
+      "A deplacer un compte",
+      "A copier un compte"
+    ],
+    correct: 1,
+    explanation: `<code>realloc</code> redimensionne un compte existant.
+
+<pre><code>#[account(
+    mut,
+    realloc = nouvelle_taille,
+    realloc::payer = signer,
+    realloc::zero = true
+)]</code></pre>`
+  },
+  {
+    category: "Reallocation",
+    question: "Que fait realloc::zero = true ?",
+    options: [
+      "Met le compte a zero lamports",
+      "Met les nouveaux bytes alloues a zero",
+      "Supprime le discriminateur",
+      "Reinitialise le compte"
+    ],
+    correct: 1,
+    explanation: `<code>realloc::zero = true</code> initialise les nouveaux bytes a 0.
+
+Important aussi quand tu <strong>reduis</strong> la taille : ca efface les anciennes donnees.`
+  },
+  // Fermeture
+  {
+    category: "Fermeture de compte",
+    question: "Que fait #[account(close = target)] ?",
+    options: [
+      "Ferme la connexion RPC",
+      "Supprime le compte et envoie les lamports vers target",
+      "Bloque le compte",
+      "Change le owner du compte"
+    ],
+    correct: 1,
+    explanation: `<code>close</code> ferme le compte :
+1. Transfere les lamports vers target
+2. Met le discriminateur a 0
+3. Vide les donnees
+
+<pre><code>#[account(mut, close = signer)]
+pub counter: Account<'info, Counter>,</code></pre>`
+  },
+  // LazyAccount
+  {
+    category: "LazyAccount",
+    question: "Quel est l'avantage de LazyAccount ?",
+    options: [
+      "Il permet de modifier les donnees plus vite",
+      "Il utilise seulement 24 bytes de pile et charge les champs a la demande",
+      "Il est automatiquement persiste",
+      "Il ne coute pas de loyer"
+    ],
+    correct: 1,
+    explanation: `<strong>LazyAccount</strong> (Anchor 0.31.0+) est optimise pour la lecture.
+
+- 24 bytes sur la pile
+- Charge les champs a la demande
+- <strong>LECTURE SEULE</strong> !`
+  },
+  // Types de comptes
+  {
+    category: "Types de comptes",
+    question: "Quelle est la difference entre Signer<'info> et SystemAccount<'info> ?",
+    options: [
+      "Aucune difference",
+      "Signer verifie que le compte a signe la transaction",
+      "SystemAccount peut modifier les donnees",
+      "Signer est plus rapide"
+    ],
+    correct: 1,
+    explanation: `<strong>Signer</strong> : verifie automatiquement la signature.
+<strong>SystemAccount</strong> : juste un compte systeme, pas de verification.
+
+<pre><code>pub payer: Signer<'info>,           // doit signer
+pub recipient: SystemAccount<'info>, // pas besoin</code></pre>`
+  },
+  {
+    category: "Types de comptes",
+    question: "Pourquoi faut-il mettre /// CHECK: devant un UncheckedAccount ?",
+    options: [
+      "Pour la documentation",
+      "Pour indiquer qu'Anchor ne fait aucune validation et que tu geres toi-meme",
+      "Pour activer le mode debug",
+      "C'est optionnel"
+    ],
+    correct: 1,
+    explanation: `<code>UncheckedAccount</code> = AUCUNE validation !
+
+Le commentaire <code>/// CHECK:</code> est <strong>obligatoire</strong>.
+Il explique pourquoi c'est safe.
+
+<pre><code>/// CHECK: On verifie manuellement le owner
+pub account: UncheckedAccount<'info>,</code></pre>`
+  },
+  {
+    category: "Types de comptes",
+    question: "Que se passe-t-il si un compte Option est None ?",
+    options: [
+      "Erreur a l'execution",
+      "Anchor utilise l'ID du programme comme adresse",
+      "Le compte est ignore",
+      "Anchor cree un compte vide"
+    ],
+    correct: 1,
+    explanation: `Quand <code>Option<Account<...>></code> est None, Anchor utilise le program ID comme placeholder.
+
+<pre><code>if let Some(account) = &ctx.accounts.optional {
+    // utilise le compte
+}</code></pre>`
+  },
+  {
+    category: "Types de comptes",
+    question: "A quoi sert Box<Account<...>> ?",
+    options: [
+      "A crypter le compte",
+      "A stocker le compte sur le heap au lieu de la stack",
+      "A rendre le compte immutable",
+      "A compresser les donnees"
+    ],
+    correct: 1,
+    explanation: `<code>Box<T></code> alloue sur le <strong>heap</strong> au lieu de la <strong>stack</strong>.
+
+La stack Solana est limitee (~4KB). Utilise Box pour les gros comptes.`
+  },
+  {
+    category: "Types de comptes",
+    question: "Quelle est la difference entre Program et Interface ?",
+    options: [
+      "Aucune difference",
+      "Interface supporte plusieurs programmes (ex: Token et Token2022)",
+      "Program est plus securise",
+      "Interface est deprecie"
+    ],
+    correct: 1,
+    explanation: `<code>Program<'info, T></code> : valide UN programme
+<code>Interface<'info, T></code> : valide PLUSIEURS programmes compatibles
+
+<pre><code>// Marche avec Token ET Token2022 :
+pub token_program: Interface<'info, TokenInterface>,</code></pre>`
+  },
+  // Token Accounts
+  {
+    category: "Token Accounts",
+    question: "Quelle est la difference entre un Mint et un TokenAccount ?",
+    options: [
+      "Mint = solde, TokenAccount = metadata",
+      "Mint = metadata du token, TokenAccount = solde d'un user",
+      "C'est la meme chose",
+      "Mint est pour SOL, TokenAccount pour les autres"
+    ],
+    correct: 1,
+    explanation: `<strong>Mint</strong> : infos globales (supply, decimals, authority)
+<strong>TokenAccount</strong> : solde d'UN user pour CE token
+
+Relation : 1 Mint -> N TokenAccounts`
+  },
+  {
+    category: "Token Accounts",
+    question: "Que fait mint::authority dans les contraintes ?",
+    options: [
+      "Definit qui peut detruire le mint",
+      "Definit qui peut creer de nouveaux tokens",
+      "Definit le owner du compte",
+      "Definit les decimales"
+    ],
+    correct: 1,
+    explanation: `<code>mint::authority</code> = qui peut <strong>mint</strong> de nouveaux tokens.
+
+<pre><code>#[account(
+    init,
+    mint::decimals = 9,
+    mint::authority = signer,
+)]
+pub mint: Account<'info, Mint>,</code></pre>`
+  },
+  // Contraintes
+  {
+    category: "Contraintes",
+    question: "Que verifie la contrainte 'address' ?",
+    options: [
+      "Que le compte a une adresse valide",
+      "Que la pubkey du compte correspond exactement a une valeur",
+      "Que le compte est sur le bon cluster",
+      "Que l'adresse est un PDA"
+    ],
+    correct: 1,
+    explanation: `<code>address = PUBKEY</code> verifie l'adresse exacte.
+
+<pre><code>#[account(address = ADMIN @ MyError::NotAdmin)]
+pub admin: Signer<'info>,</code></pre>`
+  },
+  {
+    category: "Contraintes",
+    question: "Que verifie la contrainte 'owner' ?",
+    options: [
+      "Que le compte appartient a un user specifique",
+      "Que le owner du compte est un programme specifique",
+      "Que le compte a ete cree par quelqu'un",
+      "Que le compte peut etre modifie"
+    ],
+    correct: 1,
+    explanation: `<code>owner = PROGRAM_ID</code> verifie le champ owner du compte.
+
+<pre><code>#[account(owner = token::ID)]
+pub token_account: AccountInfo<'info>,</code></pre>`
+  },
+  {
+    category: "Contraintes",
+    question: "Que verifie has_one = authority ?",
+    options: [
+      "Que le compte 'authority' existe",
+      "Que le champ 'authority' du compte correspond a la pubkey passee",
+      "Que authority est un Signer",
+      "Que authority a assez de lamports"
+    ],
+    correct: 1,
+    explanation: `<code>has_one = field</code> verifie que :
+<code>compte.field == ctx.accounts.field.key()</code>
+
+Super pour les relations compte-authority !`
+  },
+  {
+    category: "Contraintes",
+    question: "Quelle contrainte permet d'ecrire sa propre logique de validation ?",
+    options: [
+      "custom",
+      "validate",
+      "constraint",
+      "check"
+    ],
+    correct: 2,
+    explanation: `<code>constraint = expression</code> permet une validation custom.
+
+<pre><code>#[account(
+    constraint = counter.count < 100 @ MyError::MaxReached
+)]</code></pre>`
+  },
+  {
+    category: "Contraintes",
+    question: "Que fait la contrainte 'executable' ?",
+    options: [
+      "Rend le compte executable",
+      "Verifie que le compte est un programme (executable = true)",
+      "Execute le compte",
+      "Compile le compte"
+    ],
+    correct: 1,
+    explanation: `<code>executable</code> verifie que le compte est un <strong>programme</strong>.
+
+Utile pour les CPI : s'assurer qu'on appelle bien un programme.`
+  },
+  // Remaining Accounts
+  {
+    category: "Remaining Accounts",
+    question: "A quoi servent les remaining_accounts ?",
+    options: [
+      "A stocker les erreurs",
+      "A passer un nombre variable de comptes a une instruction",
+      "A recuperer les comptes supprimes",
+      "A debugger"
+    ],
+    correct: 1,
+    explanation: `<code>remaining_accounts</code> = comptes supplementaires dynamiques.
+
+<pre><code>// Rust
+for account in ctx.remaining_accounts { ... }
+
+// Client
+.remainingAccounts([{ pubkey, isSigner, isWritable }])</code></pre>`
+  },
+  {
+    category: "Remaining Accounts",
+    question: "Quel type ont les remaining_accounts ?",
+    options: [
+      "Account<'info, T>",
+      "Signer<'info>",
+      "AccountInfo (UncheckedAccount)",
+      "Program<'info, T>"
+    ],
+    correct: 2,
+    explanation: `Les remaining_accounts sont des <strong>AccountInfo</strong> (non valides !).
+
+<strong>ATTENTION</strong> : validation manuelle obligatoire !
+Source courante de vulnerabilites.`
+  },
+  // CPI
+  {
+    category: "CPI",
+    question: "C'est quoi un CPI ?",
+    options: [
+      "Central Processing Instruction",
+      "Cross-Program Invocation - appeler un autre programme",
+      "Compte Programme Initial",
+      "Crypto Payment Interface"
+    ],
+    correct: 1,
+    explanation: `<strong>CPI</strong> = Cross-Program Invocation
+
+Appeler un autre programme depuis le tien.
+
+<pre><code>let cpi_ctx = CpiContext::new(
+    ctx.accounts.system_program.to_account_info(),
+    Transfer { from: ..., to: ... }
+);
+system_program::transfer(cpi_ctx, amount)?;</code></pre>`
+  },
+  {
+    category: "CPI",
+    question: "Comment un PDA peut-il 'signer' un CPI ?",
+    options: [
+      "Avec une cle privee speciale",
+      "Avec CpiContext::new_with_signer et les seeds",
+      "Les PDAs ne peuvent pas signer",
+      "Avec .signers([pda])"
+    ],
+    correct: 1,
+    explanation: `<pre><code>let seeds = &[b"vault", user.key().as_ref(), &[bump]];
+let signer_seeds = &[&seeds[..]];
+
+let cpi_ctx = CpiContext::new_with_signer(
+    program.to_account_info(),
+    accounts,
+    signer_seeds  // <-- les seeds !
+);</code></pre>`
+  }
+];
+
+// Game state
+let currentQuestion = 0;
+let score = 0;
+let answered = 0;
+let shuffledQuestions = [];
+let wrongByCategory = {};
+let wrongQuestions = [];
+
+// Shuffle array
+function shuffle(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
+// Initialize categories display
+function initCategories() {
+    const categories = {};
+    questions.forEach(q => {
+        categories[q.category] = (categories[q.category] || 0) + 1;
+    });
+
+    const display = document.getElementById('categories-display');
+    display.innerHTML = Object.entries(categories)
+        .map(([cat, count]) => `<div class="category-item"><span>${cat}</span><span>${count} questions</span></div>`)
+        .join('');
+}
+
+// Start quiz
+function startQuiz() {
+    shuffledQuestions = shuffle(questions);
+    currentQuestion = 0;
+    score = 0;
+    answered = 0;
+    wrongByCategory = {};
+    wrongQuestions = [];
+
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('quiz-screen').style.display = 'block';
+    document.getElementById('results-screen').style.display = 'none';
+
+    showQuestion();
+}
+
+// Shuffle options and track correct answer
+let currentShuffledOptions = [];
+let currentCorrectIndex = 0;
+
+// Show current question
+function showQuestion() {
+    const q = shuffledQuestions[currentQuestion];
+
+    // Update progress
+    const progress = ((currentQuestion) / shuffledQuestions.length) * 100;
+    document.getElementById('progress-fill').style.width = progress + '%';
+
+    // Update info
+    document.getElementById('category-badge').textContent = q.category;
+    document.getElementById('score-display').textContent = `Score: ${score}/${answered}`;
+
+    // Show question
+    document.getElementById('question-text').textContent = q.question;
+
+    // Shuffle options - create array with original indices
+    const optionsWithIndices = q.options.map((opt, i) => ({ text: opt, originalIndex: i }));
+
+    // Fisher-Yates shuffle directement ici pour etre sur
+    for (let i = optionsWithIndices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [optionsWithIndices[i], optionsWithIndices[j]] = [optionsWithIndices[j], optionsWithIndices[i]];
+    }
+    currentShuffledOptions = optionsWithIndices;
+
+    // Find where the correct answer ended up after shuffle
+    currentCorrectIndex = currentShuffledOptions.findIndex(opt => opt.originalIndex === q.correct);
+
+    // Show options
+    const optionsHtml = currentShuffledOptions.map((opt, i) => `
+        <div class="option" onclick="selectOption(${i})" data-index="${i}">
+            <span class="option-letter">${String.fromCharCode(65 + i)}</span>
+            <span>${opt.text}</span>
+        </div>
+    `).join('');
+    document.getElementById('options').innerHTML = optionsHtml;
+
+    // Hide explanation and next button
+    document.getElementById('explanation').classList.remove('show');
+    document.getElementById('next-btn').classList.remove('show');
+    document.getElementById('skip-btn').style.display = 'inline-block';
+}
+
+// Select option
+function selectOption(index) {
+    const q = shuffledQuestions[currentQuestion];
+    const options = document.querySelectorAll('.option');
+
+    // Disable all options
+    options.forEach(opt => opt.classList.add('disabled'));
+
+    // Mark selected
+    options[index].classList.add('selected');
+
+    // Show correct/wrong - use currentCorrectIndex (shuffled position)
+    if (index === currentCorrectIndex) {
+        options[index].classList.add('correct');
+        score++;
+    } else {
+        options[index].classList.add('wrong');
+        options[currentCorrectIndex].classList.add('correct');
+        wrongByCategory[q.category] = (wrongByCategory[q.category] || 0) + 1;
+        wrongQuestions.push(q);
+    }
+
+    answered++;
+    document.getElementById('score-display').textContent = `Score: ${score}/${answered}`;
+
+    // Show explanation
+    document.getElementById('explanation-text').innerHTML = q.explanation;
+    document.getElementById('explanation').classList.add('show');
+
+    // Show next button, hide skip
+    document.getElementById('next-btn').classList.add('show');
+    document.getElementById('skip-btn').style.display = 'none';
+}
+
+// Skip question
+function skipQuestion() {
+    const q = shuffledQuestions[currentQuestion];
+
+    // Show explanation anyway
+    document.getElementById('explanation-text').innerHTML = q.explanation;
+    document.getElementById('explanation').classList.add('show');
+
+    // Show correct answer - use currentCorrectIndex (shuffled position)
+    const options = document.querySelectorAll('.option');
+    options.forEach(opt => opt.classList.add('disabled'));
+    options[currentCorrectIndex].classList.add('correct');
+
+    // Show next button
+    document.getElementById('next-btn').classList.add('show');
+    document.getElementById('skip-btn').style.display = 'none';
+}
+
+// Next question
+function nextQuestion() {
+    currentQuestion++;
+
+    if (currentQuestion >= shuffledQuestions.length) {
+        showResults();
+    } else {
+        showQuestion();
+    }
+}
+
+// Show results
+function showResults() {
+    document.getElementById('quiz-screen').style.display = 'none';
+    document.getElementById('results-screen').style.display = 'block';
+
+    const percent = answered > 0 ? Math.round((score / answered) * 100) : 0;
+
+    // Score circle
+    document.getElementById('score-circle').style.setProperty('--score-percent', percent + '%');
+    document.getElementById('final-score').textContent = `${score}/${answered}`;
+
+    // Message
+    let message, emoji;
+    if (percent === 100) {
+        message = "PARFAIT !"; emoji = "🏆";
+    } else if (percent >= 80) {
+        message = "Excellent !"; emoji = "🌟";
+    } else if (percent >= 60) {
+        message = "Bien joue !"; emoji = "👍";
+    } else if (percent >= 40) {
+        message = "Pas mal !"; emoji = "📖";
+    } else {
+        message = "Continue !"; emoji = "💪";
+    }
+
+    document.getElementById('result-message').textContent = emoji + " " + message;
+    document.getElementById('result-details').textContent = `Tu as repondu correctement a ${percent}% des questions.`;
+
+    // Wrong categories
+    if (Object.keys(wrongByCategory).length > 0) {
+        document.getElementById('categories-results').style.display = 'block';
+        const wrongHtml = Object.entries(wrongByCategory)
+            .sort((a, b) => b[1] - a[1])
+            .map(([cat, count]) => `<div class="category-error"><span>${cat}</span><span>${count} erreur(s)</span></div>`)
+            .join('');
+        document.getElementById('wrong-categories').innerHTML = wrongHtml;
+    } else {
+        document.getElementById('categories-results').style.display = 'none';
+    }
+}
+
+// Restart quiz
+function restartQuiz() {
+    document.getElementById('results-screen').style.display = 'none';
+    document.getElementById('start-screen').style.display = 'block';
+}
+
+// Review wrong answers
+function reviewWrong() {
+    if (wrongQuestions.length === 0) {
+        alert("Aucune erreur a revoir !");
+        return;
+    }
+
+    shuffledQuestions = [...wrongQuestions];
+    currentQuestion = 0;
+    score = 0;
+    answered = 0;
+    wrongByCategory = {};
+    wrongQuestions = [];
+
+    document.getElementById('results-screen').style.display = 'none';
+    document.getElementById('quiz-screen').style.display = 'block';
+
+    showQuestion();
+}
+
+// Init
+initCategories();
+    </script>
+</body>
+</html>
